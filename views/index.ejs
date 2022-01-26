@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>View table</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>	
+</head>
+<body>
+
+	<label>Date:</label>
+	<input type="date" name="date"><br>
+	<label>Mod of payment:</label>
+	<select name="mop">
+		<option value="gcash">GCASH</option>
+		<option value="cod">COD</option>
+	</select>
+	<br>
+	<br>
+	<form>
+		<table border="1px">
+			<thead>
+				<th>Product Name</th>
+				<th>Product Price</th>
+				<th>Product Quantity</th>
+			</thead>
+			<tbody>
+				<% for(var i=0; i< data.length; i++){ %>
+
+					<tr id="recordno<%= data[i].id %>">
+						<td><%= data[i].pname %></td>
+						<td><%= data[i].pprice %></td>
+						<td>
+							<input type="number" id="<%= data[i].id %>" name="userQty">
+							<input type="hidden" id="totalvalfor<%= data[i].id %>" value=0 name="totalvalall">
+							<input type="hidden" value="<%= data[i].id %>" name="ids">
+
+						</td>
+
+					</tr>
+
+				<% }%>
+					<tr>
+						<td>Total: </td>
+						<td></td>
+						<td id="totalvalalldata">0</td>
+					</tr>
+			</tbody>
+		</table>
+		<br>
+		<input type="submit" value="Checkout">
+	</form>
+</body>
+</html>
+<script type="text/javascript">
+
+	$("form").on("submit",(e)=>{
+		e.preventDefault();
+		const data = $("form").serializeArray();
+		var date = $("input[name=date]").val();
+		var mop =  $("select[name=mop]").val();
+		if( date=="" || mop == ""){
+			alert("empty date or mode of payment")
+			return;
+		}
+		var datatosend = {
+			selected: [],
+			others:{
+				date_ordered:date,
+				mode:mop
+			}
+
+		}
+		for(var i = 0; i<data.length;i+=3){
+			if (data[i].name=="userQty" && data[i].value==0) continue;
+			datatosend.selected.push({id:data[i+2].value,quantity:data[i].value})
+		}
+		$.ajax({
+			type:"POST",
+			url:"/addorder",
+			dataType:"json",
+			data: {data:JSON.stringify(datatosend)},
+			success:()=>{
+				alert("successfully added");
+				location.reload(true);
+			}
+		});
+		console.log(datatosend)
+
+	});
+	$("input[type=number]").keyup((e)=>{
+		const product_id = e.target.id;
+		let product_value_entered = e.target.value;
+		var currenRow = $("#recordno"+product_id).find("td");
+		const pro_name = currenRow[0].innerText;
+		const pro_price = parseInt(currenRow[1].innerText);
+		let overalltotal =0;
+		const alltotals = $("input[name=totalvalall]");
+		$("#totalvalfor"+product_id).val(pro_price*product_value_entered);
+		for(var i=0;i<alltotals.length;i++){
+			overalltotal+=parseInt(alltotals[i].defaultValue);
+		}
+		$("#totalvalalldata").text(overalltotal)
+
+	});
+</script>
